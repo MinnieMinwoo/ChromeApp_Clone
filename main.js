@@ -2,52 +2,35 @@ import http from "http";
 import url from "url";
 import fs from "fs/promises";
 
-http.createServer((request, response) => {
-    const path = url.parse(request.url, true).pathname;
-    if (request.method === "GET") {
-    }
+function checkContentType(path) {
     if (path === "/") {
-        fs.readFile("./index.html")
-            .then((data) => {
-                response.writeHead(200, { "content-type": "text/html" });
-                response.end(data, "utf8");
-            })
-            .catch((err) => {
-                return console.error(err);
-            });
-    } else if (path === "/css/style.css") {
-        fs.readFile("./css/style.css")
-            .then((data) => {
-                response.writeHead(200, { "content-type": "text/css" });
-                response.end(data);
-            })
-            .catch((err) => {
-                return console.error(err);
-            });
+        return "text/html";
+    } else if (path.includes("/css/")) {
+        return "text/css";
     } else if (path.includes("/js/")) {
-        fs.readFile(`.${path}`)
-            .then((data) => {
-                response.writeHead(200, {
-                    "content-type": "Application/javascript",
-                });
-                response.end(data);
-            })
-            .catch((err) => {
-                return console.error(err);
-            });
+        return "Application/javascript";
     } else if (path.includes("/img/")) {
-        fs.readFile(`.${path}`)
-            .then((data) => {
-                response.writeHead(200, {
-                    "content-type": "image/jpeg	",
-                });
-                response.end(data);
-            })
-            .catch((err) => {
-                return console.error(err);
-            });
+        return "image/jpeg";
     } else {
+        return "";
+    }
+}
+
+http.createServer((request, response) => {
+    let path = url.parse(request.url, true).pathname;
+    const contentType = checkContentType(path);
+    if (request.method !== "GET" || contentType === "") {
         response.writeHead(404);
         response.end("Not Found");
     }
+    fs.readFile(`.${path === "/" ? "/index.html" : path}`)
+        .then((data) => {
+            response.writeHead(200, {
+                "content-type": contentType,
+            });
+            response.end(data);
+        })
+        .catch((err) => {
+            return console.error(err);
+        });
 }).listen(3000);
